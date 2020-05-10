@@ -1,6 +1,6 @@
 // 먼지 센서 테스트
 /*
-#define DUST_PIN 14       // A0
+#define DUST_PIN 15       // A1
 #define DUST_LED_PIN 2    // PD2
 
 #define DELAY_TIME 500
@@ -39,7 +39,8 @@ void loop()
   dustDensity = 0.17 * calcVoltage - 0.1;
 
   // 결과 출력
-  Serial.print("- Raw Value (0-1023): " + String(voMeasured));
+  Serial.print("- Raw Dust Value (0-1023): " + String(voMeasured));
   Serial.print(" - Voltage: " + String(calcVoltage)); 
   Serial.println("- Dust Density: " + String(dustDensity) + " mg/m3");
 }
+*/

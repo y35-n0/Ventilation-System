@@ -1,5 +1,6 @@
-// 실외 아두이노
 
+// 실외 아두이노
+/*
 #include <ESP8266WiFi.h>
 #include <SoftwareSerial.h>
 
@@ -30,3 +31,4 @@ void setup()
 void loop()
 {
 }
+*/

@@ -18,7 +18,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#include "ESP8266.h"
+#include <ESP8266.h>
 
 #define SSID        "ITEAD"
 #define PASSWORD    "12345678"
@@ -107,4 +107,3 @@ void loop(void)
         mux_id = 0;
     }
 }
-
