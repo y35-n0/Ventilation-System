@@ -1,36 +1,41 @@
 // 실내 아두이노
-/*  0. ventilation_system.h에서 아래의 사항을 확인해주세요.
- *  1. AP_SSID, AP_PASS에 WiFi 이름, 비밀번호 입력해야 합니다.
- *  2. DHT_PIN, DUST_PIN, DUST_LED_PIN, CO2_PIN, GAS_PIN 핀번호가 맞는지 확인해주세요.
- */
-
-
-/**** 기본 설정 ****/
-/*
 #include <ESP8266WiFi.h>
 #include <DHT.h>
 #include <MQ135.h>
+#include <ArduinoJson.h>
 #include "ventilation_system.h"
 
+// WiFi 및 TCP 연결 객체
+WiFiClient client;
+IPAddress ip;
+
+// JSON 객체
+DynamicJsonDocument bufJson(1024);
+JsonObject dataJson = bufJson.createNestedObject("data");
+String bufStr;
+
+// 전송할 실내 아두이노 데이터
+const String dataNames[DATA_CNT] = {"i_humid", "i_temp", "i_dust", "i_gas1", "i_gas2"};
+float data[DATA_CNT] = {0.0, };
+
+// 센서 관련 객체
 DHT dht(DHT_PIN, DHT_TYPE);         // 온습도 측정 센서
 MQ135 mq(CO2_PIN);                  // CO2 측정 센서
 
+// 센서 측정 값
 float humidity = 0.0;       // 습도 %
 float temperature = 0.0;    // 온도 C
 float voMeasured = 0.0;     // 먼지 실측값
 float calcVoltage = 0.0;    // 먼지 전압 보정값
 float dustDensity = 0.0;    // 먼지 농도 mg/m3
-float co2 = 0.0;            // CO2 ppm스
-int gas = 0;                // 가
+float co2 = 0.0;            // CO2 ppm
+int gas = 0;                // 가연가스
 
+// 평균값 산출을 위한 합계 변수
+float total[DATA_CNT] = {0.0, };
 
-//  float dust[READING_TIMES] = {0.0, };      // 먼지 농도 mg/m3
-//  float humid[READING_TIMES] = {0.0, };     // 습도 %
-//  float
-
-
-//  float totalDust = 0;
-//  float totalHumid = 0;
+// 센서 값을 읽은 횟수
+int times = 0;
 
 void setup()
 {
@@ -40,7 +45,7 @@ void setup()
   Serial.println();
   Serial.println("** CONNECT WIFI **");
 
-  Serial.print("- Connecting ");
+  Serial.print("- Connecting AP ");
   WiFi.begin(AP_SSID, AP_PASS);
   while (WiFi.status() != WL_CONNECTED)
   {
@@ -51,6 +56,9 @@ void setup()
   Serial.println(" Ready");
   Serial.print("- IP address: ");
   Serial.println(WiFi.localIP());
+
+  Serial.println("- Setting ID");
+  bufJson["id"] = INNER_ARDUINO;
 
   // 온습도
   Serial.println("** SET DHT SENSOR **");
@@ -72,14 +80,11 @@ void setup()
 
 void loop()
 {
+  Serial.println("** Observing Values **");
   // 온습도 측정
-  humidity = dht.readHumidity();
-  temperature = dht.readTemperature();
+  total[HUM] += dht.readHumidity();
+  total[TEM] += dht.readTemperature();
 
-  // 온습도 결과 출력
-  Serial.print("- Humidity: " + String(humidity) + "%");
-  Serial.println("- Temperature: " + String(temperature) + "C");
-  
   // 먼지 측정
   digitalWrite(DUST_LED_PIN, LOW);
   delayMicroseconds(SAMPLING_TIME);
@@ -90,26 +95,70 @@ void loop()
 
   // 먼지 수치 보정 계산
   calcVoltage = voMeasured * (5.0 / 1024.0);
-  dustDensity = 0.17 * calcVoltage - 0.1;
-
-  // 먼지 결과 출력
-  Serial.print("- Raw Value (0-1023): " + String(voMeasured));
-  Serial.print(" - Voltage: " + String(calcVoltage));
-  Serial.println(" - Dust Density: " + String(dustDensity) + " mg/m3");// 측정
-  digitalWrite(DUST_LED_PIN, LOW);
-  delayMicroseconds(SAMPLING_TIME);
+  total[DUS] += 0.17 * calcVoltage - 0.1;
 
   // CO2 측정 및 수치 보정
-  co2 = mq.getCorrectedPPM(temperature, humidity);
-
-  // CO2 결과 출력
-  Serial.println("- CO2: " + String(co2) + " ppm");
+  total[CO2] += mq.getCorrectedPPM(temperature, humidity);
 
   // 가스 측정
-  gas = analogRead(GAS_PIN);
-  Serial.println("- GAS: " + String(gas));
-  
+  total[GAS] += analogRead(GAS_PIN);
+
+  times++;
+  if (times == READING_TIMES)
+  {
+    // 평균 결과 출력
+    Serial.println("** Avg Observed Values **");
+
+    Serial.print("- Humidity: " + String(total[HUM] / READING_TIMES) + "%");
+    Serial.print(" - Temperature: " + String(total[TEM] / READING_TIMES) + "C");
+    Serial.print(" - Dust Density: " + String(total[DUS] / READING_TIMES) + " mg/m3");
+    Serial.print(" - CO2: " + String(total[CO2] / READING_TIMES) + " ppm");
+    Serial.println("- GAS: " + String(total[GAS] / READING_TIMES));
+
+    // 보낼 관측치 -> JSON -> string
+    // 변수 초기화
+    Serial.println("** Sending Data ...**");
+    Serial.println("- Set Data");
+    for (int i = 0; i < DATA_CNT; i++) {
+      dataJson[dataNames[i]] = total[i];
+      total[i] = 0.0;
+    }
+    serializeJson(bufJson, bufStr);
+    times = 0;
+
+    // 서버 연결
+    Serial.printf("- Connect Server %s ... ", HOST);
+    if (client.connect(HOST, PORT))
+    {
+      Serial.println("Ready");
+
+      // 데이터 전송
+      Serial.println("- Reqeust: " + bufStr);
+      client.print(bufStr);
+
+
+      // 응답확인
+      Serial.println("- Response: ");
+      while (client.connected() || client.available())
+      {
+        if (client.available())
+        {
+          bufStr = client.readString();
+          Serial.println("- Received Str : " + bufStr);
+        }
+      }
+
+      // 연결 종료
+      client.stop();
+      Serial.println("- Disconnected");
+    }
+    else {
+      Serial.println("Failed!");
+    }
+  }
+
   delay(DELAY_TIME);
+
 
 }
 

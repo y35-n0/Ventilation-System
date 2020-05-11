@@ -21,6 +21,14 @@
 // 데이터 전송 설정
 
 #define TDATA_CNT     3              // 전송할 데이터 수
+#define DATA_CNT      5             // 전송할 데이터 종류 (온도, 습도, 실외먼지, 유해가스, 가연성가스)
+
+// 데이터 번호
+#define HUM         0
+#define TEM         1
+#define DUS         2
+#define GAS         3
+#define CO2         4
 
 // 센서 핀번호 및 관련 설정
 
