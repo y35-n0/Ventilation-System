@@ -11,7 +11,6 @@ IPAddress ip;
 
 // JSON 객체
 DynamicJsonDocument bufJson(1024);
-JsonObject dataJson = bufJson.createNestedObject("data");
 String bufStr;
 
 // 전송할 실내 아두이노 데이터
@@ -27,7 +26,7 @@ float humidity = 0.0;       // 습도 %
 float temperature = 0.0;    // 온도 C
 float voMeasured = 0.0;     // 먼지 실측값
 float calcVoltage = 0.0;    // 먼지 전압 보정값
-float dustDensity = 0.0;    // 먼지 농도 mg/m3
+float dustDensity = 0.0;    // 먼지 농도 ug/m3
 float co2 = 0.0;            // CO2 ppm
 int gas = 0;                // 가연가스
 
@@ -95,7 +94,7 @@ void loop()
 
   // 먼지 수치 보정 계산
   calcVoltage = voMeasured * (5.0 / 1024.0);
-  total[DUS] += 0.17 * calcVoltage - 0.1;
+  total[DUS] += (0.17 * calcVoltage - 0.1) * 1000;
 
   // CO2 측정 및 수치 보정
   total[CO2] += mq.getCorrectedPPM(temperature, humidity);
@@ -111,7 +110,7 @@ void loop()
 
     Serial.print("- Humidity: " + String(total[HUM] / READING_TIMES) + "%");
     Serial.print(" - Temperature: " + String(total[TEM] / READING_TIMES) + "C");
-    Serial.print(" - Dust Density: " + String(total[DUS] / READING_TIMES) + " mg/m3");
+    Serial.print(" - Dust Density: " + String(total[DUS] / READING_TIMES) + " ug/m3");
     Serial.print(" - CO2: " + String(total[CO2] / READING_TIMES) + " ppm");
     Serial.println("- GAS: " + String(total[GAS] / READING_TIMES));
 
@@ -120,7 +119,7 @@ void loop()
     Serial.println("** Sending Data ...**");
     Serial.println("- Set Data");
     for (int i = 0; i < DATA_CNT; i++) {
-      dataJson[dataNames[i]] = total[i];
+      bufJson[dataNames[i]] = total[i];
       total[i] = 0.0;
     }
     serializeJson(bufJson, bufStr);

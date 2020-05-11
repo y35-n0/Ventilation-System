@@ -33,12 +33,12 @@ void loop()
 
   // 수치 보정 계산
   calcVoltage = voMeasured * (5.0 / 1024.0);
-  dustDensity = 0.17 * calcVoltage - 0.1;
+  dustDensity = (0.17 * calcVoltage - 0.1) * 1000;
 
   // 결과 출력
   Serial.print("- Raw Dust Value (0-1023): " + String(voMeasured));
-  Serial.print(" - Voltage: " + String(calcVoltage)); 
-  Serial.println("- Dust Density: " + String(dustDensity) + " mg/m3");
+  Serial.print(" - Voltage: " + String(calcVoltage));
+  Serial.println("- Dust Density: " + String(dustDensity) + " ug/m3");
 }
 /*
 */

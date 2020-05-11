@@ -18,6 +18,10 @@
 #define WEAK_VT         3       // 약한 환기
 #define STRONG_VT       4       // 강한 환기
 
+// 환기 시간
+#define WEAK_TIME       3000    // 약식 환기 시간
+#define STRONG_TIME     10000   // 환기 시간
+
 // 데이터 전송 설정
 
 #define TDATA_CNT     3              // 전송할 데이터 수
