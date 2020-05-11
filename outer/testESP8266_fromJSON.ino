@@ -1,23 +1,8 @@
 // Server JSON 요청 및 전송 테스트
-
+/*
 #include <ESP8266WiFi.h>
 #include <ArduinoJson.h>
-
-#define AP_SSID "공유기 아이디"    // WiFi SSID
-#define AP_PASS "공유기 비밀번호"   // WiFi 비밀번호
-#define PORT 8090               // 서버 포트 번호
-#define DATA_CNT_MAX 6          // 데이터 개수
-
-// ID 값
-#define INNER_ARDUINO   0       // 실내 아두이노 ID
-#define ANDROID         1       // 안드로이드 ID
-
-// CMD 값
-#define REQUEST         0       // 데이터 요청
-#define AUTO            1       // 자동 조작
-#define MANUAL          2       // 수동 조작  
-#define WEAK_VT         3       // 약한 환기
-#define STRONG_VT       4       // 강한 환기
+#include "ventilation_system.h"
 
 WiFiServer server(PORT);
 IPAddress ip;
@@ -32,8 +17,8 @@ String bufStr;
 
 
 // 전송할 실외 아두이노 데이터
-String dataNames[DATA_CNT_MAX] = {"데이터1", "데이터2", "데이터3"};
-float data[DATA_CNT_MAX] = {1.1, 2.2, 3.3};
+String dataNames[TDATA_CNT] = {"데이터1", "데이터2", "데이터3"};
+float data[TDATA_CNT] = {1.1, 2.2, 3.3};
 
 boolean isAuto = true;  // 자동 모드 여부
 int id = -1;            // client id
@@ -69,7 +54,7 @@ void setup()
 void loop()
 {
   Serial.println("- Setting Data");
-  for (int i = 0; i < DATA_CNT_MAX; i++) {
+  for (int i = 0; i < TDATA_CNT; i++) {
     outer[dataNames[i]] = data[i];
   }
 
@@ -92,7 +77,7 @@ void loop()
           // 실내 아두이노 데이터 수집
           case INNER_ARDUINO:
             Serial.println("- INNER ARDUINO, Parsing received data ...");
-            for (int i = 0; i < DATA_CNT_MAX; i++)
+            for (int i = 0; i < TDATA_CNT; i++)
             {
               inner[dataNames[i]] = bufJson[dataNames[i]];
             }

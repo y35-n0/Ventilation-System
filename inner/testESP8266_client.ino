@@ -1,16 +1,13 @@
 // Client 테스트
 /*
 #include <ESP8266WiFi.h>
+#include "ventilation_system.h"
 
-#define AP_SSID "공유기 아이디"    // WiFi SSID
-#define AP_PASS "공유기 비밀번호"   // WiFi 비밀번호
-#define HOST "실외 IP 주소"       // 실외 아두이노 IP 주소
-#define MSG_MAX 3
 WiFiClient client;
 IPAddress ip;
 
 int i = 0;
-String messages[MSG_MAX] = {"1\r\n", "2\r\n", "3\r\n"};
+String messages[TDATA_CNT] = {"1\r\n", "2\r\n", "3\r\n"};
 
 void setup()
 {
@@ -46,7 +43,7 @@ void loop()
     // 메세지 전송
     Serial.println("- Request: " + messages[i]);
     client.print(messages[i]);
-    if (i < MSG_MAX - 1) {
+    if (i < TDATA_CNT - 1) {
       i++;
     } else {
       i = 0;

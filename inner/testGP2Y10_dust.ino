@@ -1,9 +1,6 @@
 // 먼지 센서 테스트
 /*
-#define DUST_PIN 15       // A1
-#define DUST_LED_PIN 2    // PD2
-
-#define DELAY_TIME 500
+#include "ventilation_system.h"
 
 float voMeasured = 0.0;
 float calcVoltage = 0.0;
@@ -43,4 +40,5 @@ void loop()
   Serial.print(" - Voltage: " + String(calcVoltage)); 
   Serial.println("- Dust Density: " + String(dustDensity) + " mg/m3");
 }
+/*
 */

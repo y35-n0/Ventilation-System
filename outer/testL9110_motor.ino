@@ -1,11 +1,7 @@
 // L9110 모터 테스트
 /*
 #include <SoftwareSerial.h>
-
-
-#define MTA_PIN 9   
-#define MTB_PIN 8   
-
+#include "ventilation_system.h"
 
 void setup()
 {

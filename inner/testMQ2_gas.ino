@@ -1,6 +1,6 @@
 // 가스 측정 테스트
 /*
-#define GAS_PIN 17 // A3
+#include "ventilation_system.h"
 
 void setup()
 {

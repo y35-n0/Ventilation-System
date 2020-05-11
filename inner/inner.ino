@@ -1,35 +1,15 @@
 // 실내 아두이노
-/*
+/*  0. ventilation_system.h에서 아래의 사항을 확인해주세요.
  *  1. AP_SSID, AP_PASS에 WiFi 이름, 비밀번호 입력해야 합니다.
  *  2. DHT_PIN, DUST_PIN, DUST_LED_PIN, CO2_PIN, GAS_PIN 핀번호가 맞는지 확인해주세요.
  */
 
 
 /**** 기본 설정 ****/
-/*
 #include <ESP8266WiFi.h>
 #include <DHT.h>
 #include <MQ135.h>
-
-
-#define AP_SSID     "공유기 아이디"    // WiFi SSID
-#define AP_PASS     "공유기 비밀번호"   // WiFi 비밀번호
-
-#define DHT_PIN       16            // A2, 온습도 센서
-#define DHT_TYPE      DHT11         // 온습도 사용하는 센서 종류
-
-#define DUST_PIN      15            // A1, 먼지 센서
-#define DUST_LED_PIN  2             // PD2, 먼지 LED
-#define SAMPLING_TIME 280           // 먼지 측정 관련 시간, micro 단위
-#define DELTA_TIME    40            // 먼지 측정 관련 시간, micro 단위
-#define SLEEP_TIME    9680          // 먼지 측정 관련 시간, micro 단위
-
-#define CO2_PIN       14            // A0, CO2 센서
-
-#define GAS_PIN       17            // A3, 가스 센서
-
-#define DELAY_TIME    2000          // 측정, 대기 시간
-#define READING_TIMES 5             // 측정 횟수
+#include "ventilation_system.h"
 
 
 DHT dht(DHT_PIN, DHT_TYPE);         // 온습도 측정 센서

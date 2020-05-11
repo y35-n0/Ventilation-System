@@ -1,14 +1,8 @@
 // Client JSON 요청 테스트
-
+/*
 #include <ESP8266WiFi.h>
 #include <ArduinoJson.h>        // 아두이노 JSON parsing
-
-#define AP_SSID            "공유기 아이디"    // WiFi SSID
-#define AP_PASS            "공유기 비밀번호"   // WiFi 비밀번호
-#define HOST               "실외 IP 주소"       // 실외 아두이노 IP 주소
-#define PORT                8090               // 실외 아두이노 포트 번
-#define DATA_CNT_MAX        3              // 데이터 개수
-#define INNER_ARDUINO       0              // 실내 아두이노 ID
+#include "ventilation_system.h"
 
 WiFiClient client;
 IPAddress ip;
@@ -19,8 +13,8 @@ JsonObject dataJson = bufJson.createNestedObject("data");
 String bufStr;
 
 // 전송할 실내 아두이노 데이터
-String dataNames[DATA_CNT_MAX] = {"데이터1", "데이터2", "데이터3"};
-float data[DATA_CNT_MAX] = {0.1, 0.2, 3.0};
+String dataNames[TDATA_CNT] = {"데이터1", "데이터2", "데이터3"};
+float data[TDATA_CNT] = {0.1, 0.2, 3.0};
 
 void setup()
 {
@@ -50,7 +44,7 @@ void loop()
   // Json 객체 설정
   Serial.println("- Setting Messages");
   bufJson["id"] = INNER_ARDUINO;
-  for (int i = 0; i < DATA_CNT_MAX; i++) {
+  for (int i = 0; i < TDATA_CNT; i++) {
     dataJson[dataNames[i]] = data[i];
   }
   serializeJson(bufJson, bufStr);
