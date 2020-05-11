@@ -41,7 +41,7 @@ float voMeasured = 0.0;     // 먼지 실측값
 float calcVoltage = 0.0;    // 먼지 전압 보정값
 float dustDensity = 0.0;    // 먼지 농도 mg/m3
 float co2 = 0.0;                     // CO2 ppm
-int gas = 0.0;
+int gas = 0;
 
 
 //  float dust[READING_TIMES] = {0.0, };      // 먼지 농도 mg/m3
