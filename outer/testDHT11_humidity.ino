@@ -1,7 +1,8 @@
 // 온습도 센서 테스트
+/*
 #include <DHT.h>
 #include "ventilation_system.h"
-/*
+
 DHT dht(DHT_PIN, DHT_TYPE);
 
 void setup() {

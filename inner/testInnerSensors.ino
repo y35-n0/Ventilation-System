@@ -1,13 +1,5 @@
 // 실내 아두이노
-/*  0. ventilation_system.h에서 아래의 사항을 확인해주세요.
- *  1. AP_SSID, AP_PASS에 WiFi 이름, 비밀번호 입력해야 합니다.
- *  2. DHT_PIN, DUST_PIN, DUST_LED_PIN, CO2_PIN, GAS_PIN 핀번호가 맞는지 확인해주세요.
- */
-
-
-/**** 기본 설정 ****/
 /*
-#include <ESP8266WiFi.h>
 #include <DHT.h>
 #include <MQ135.h>
 #include "ventilation_system.h"
@@ -20,37 +12,24 @@ float temperature = 0.0;    // 온도 C
 float voMeasured = 0.0;     // 먼지 실측값
 float calcVoltage = 0.0;    // 먼지 전압 보정값
 float dustDensity = 0.0;    // 먼지 농도 mg/m3
-float co2 = 0.0;            // CO2 ppm스
+float co2 = 0.0;            // CO2 ppm
 int gas = 0;                // 가
 
+// 평균값 산출을 위한 합계 변수
+float totalHumi = 0.0;
+float totalDust = 0.0;
+float totalTemp = 0.0;
+float totalCo2 = 0.0;
+int totalGas = 0;
 
-//  float dust[READING_TIMES] = {0.0, };      // 먼지 농도 mg/m3
-//  float humid[READING_TIMES] = {0.0, };     // 습도 %
-//  float
-
-
-//  float totalDust = 0;
-//  float totalHumid = 0;
+// 센서 값을 읽은 횟수
+int times = 0;
 
 void setup()
 {
   Serial.begin(9600);
-
-  // WiFi
   Serial.println();
-  Serial.println("** CONNECT WIFI **");
-
-  Serial.print("- Connecting ");
-  WiFi.begin(AP_SSID, AP_PASS);
-  while (WiFi.status() != WL_CONNECTED)
-  {
-    delay(500);
-    Serial.print(".");
-  }
-
-  Serial.println(" Ready");
-  Serial.print("- IP address: ");
-  Serial.println(WiFi.localIP());
+  Serial.println("***** SENSOR TEST ******");
 
   // 온습도
   Serial.println("** SET DHT SENSOR **");
@@ -68,10 +47,64 @@ void setup()
   // 가스
   Serial.println("** SET GAS SENSOR **");
   pinMode(GAS_PIN, INPUT);
+
+  // 센서 확
+  testOneTime();
 }
 
 void loop()
 {
+  // 온습도 측정
+  totalHumi += dht.readHumidity();
+  totalTemp += dht.readTemperature();
+
+  // 먼지 측정
+  digitalWrite(DUST_LED_PIN, LOW);
+  delayMicroseconds(SAMPLING_TIME);
+  voMeasured = analogRead(DUST_PIN);
+  delayMicroseconds(DELTA_TIME);
+  digitalWrite(DUST_LED_PIN, HIGH);
+  delayMicroseconds(SLEEP_TIME);
+
+  // 먼지 수치 보정 계산
+  calcVoltage = voMeasured * (5.0 / 1024.0);
+  totalDust += 0.17 * calcVoltage - 0.1;
+
+  // CO2 측정 및 수치 보정
+  totalCo2 += mq.getCorrectedPPM(temperature, humidity);
+
+  // 가스 측정
+  totalGas += analogRead(GAS_PIN);
+
+  times++;
+  
+  // 평균 결과 출력
+  if (times == READING_TIMES)
+  {
+    Serial.println("- Humidity: " + String(totalHumi/READING_TIMES) + "%");
+    Serial.println("- Temperature: " + String(totalTemp/READING_TIMES) + "C");
+    Serial.println(" - Dust Density: " + String(totalDust/READING_TIMES) + " mg/m3");
+    Serial.println("- CO2: " + String(totalCo2/READING_TIMES) + " ppm");
+    Serial.println("- GAS: " + String(totalGas/READING_TIMES));
+
+    // 변수 초기화
+    times = 0;
+    totalHumi = 0.0;
+    totalTemp = 0.0;
+    totalDust = 0.0;
+    totalCo2 = 0.0;
+    totalGas = 0.0;
+  }
+  
+  delay(DELAY_TIME);
+
+}
+
+void testOneTime()
+{
+  Serial.println();
+  Serial.println("** FIRST TEST START **");
+
   // 온습도 측정
   humidity = dht.readHumidity();
   temperature = dht.readTemperature();
@@ -79,7 +112,7 @@ void loop()
   // 온습도 결과 출력
   Serial.print("- Humidity: " + String(humidity) + "%");
   Serial.println("- Temperature: " + String(temperature) + "C");
-  
+
   // 먼지 측정
   digitalWrite(DUST_LED_PIN, LOW);
   delayMicroseconds(SAMPLING_TIME);
@@ -108,9 +141,9 @@ void loop()
   // 가스 측정
   gas = analogRead(GAS_PIN);
   Serial.println("- GAS: " + String(gas));
-  
-  delay(DELAY_TIME);
+  Serial.println("** FIRST TEST ENDED **");
 
+  delay(DELAY_TIME);
 }
 
 
