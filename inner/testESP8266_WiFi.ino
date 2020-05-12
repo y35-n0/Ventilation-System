@@ -1,5 +1,5 @@
 // 와이파이 테스트
-/*
+
 #include <ESP8266WiFi.h>
 #include "ventilation_system.h"
       

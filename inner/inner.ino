@@ -1,4 +1,5 @@
 // 실내 아두이노
+/*
 #include <ESP8266WiFi.h>
 #include <DHT.h>
 #include <MQ135.h>

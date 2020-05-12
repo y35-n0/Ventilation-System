@@ -7,7 +7,7 @@ void setup()
 {
   Serial.begin(9600);
 
-  // 와이파이 연결
+  // 모터 연결
   Serial.println();
   Serial.println("** MOTOR TEST **");
 

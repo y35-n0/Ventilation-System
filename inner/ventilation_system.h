@@ -1,7 +1,7 @@
 // 와이파이 설정
 
-#define AP_SSID            "공유기 아이디"    // WiFi SSID
-#define AP_PASS            "공유기 비밀번호"   // WiFi 비밀번호
+#define AP_SSID            "U+NETDA20"    // WiFi SSID
+#define AP_PASS            "5000025797"   // WiFi 비밀번호
 #define HOST               "실외 IP 주소"       // 실외 아두이노 IP 주소
 #define PORT                8090              // 실외 아두이노 포트 번호
 

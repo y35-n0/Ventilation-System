@@ -1,5 +1,5 @@
 // 실외 아두이노 종합
-
+/*
 #include <ESP8266WiFi.h>
 #include <SoftwareSerial.h>
 #include <ArduinoJson.h>
@@ -219,7 +219,7 @@ void observeValues()
 
   // 먼지 수치 보정 계산
   calcVoltage = voMeasured * (5.0 / 1024.0);
-  total[DUS] += (0.17 * calcVoltage - 0.1) * 1000;
+  total[DUS] += (0.17 * calcVoltage * 0.047) * 1000;
 
   // 가스 측정
   total[GAS] += analogRead(GAS_PIN);
@@ -276,7 +276,7 @@ void turnOnMotor(int t) {
   timeVentilated = millis();
   timeToVentilate = t;
   digitalWrite(MTA_PIN, HIGH);
-  digitalWrite(MTB_PIN, HIGH);
+  digitalWrite(MTB_PIN, LOW);
 
 }
 

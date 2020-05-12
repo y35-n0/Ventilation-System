@@ -81,9 +81,10 @@ void loop()
   // 평균 결과 출력
   if (times == READING_TIMES)
   {
+    Serial.println();
     Serial.println("- Humidity: " + String(totalHumi/READING_TIMES) + "%");
     Serial.println("- Temperature: " + String(totalTemp/READING_TIMES) + "C");
-    Serial.println(" - Dust Density: " + String(totalDust/READING_TIMES) + " ug/m3");
+    Serial.println("- Dust Density: " + String(totalDust/READING_TIMES) + " ug/m3");
     Serial.println("- CO2: " + String(totalCo2/READING_TIMES) + " ppm");
     Serial.println("- GAS: " + String(totalGas/READING_TIMES));
 
@@ -128,7 +129,7 @@ void testOneTime()
   // 먼지 결과 출력
   Serial.print("- Raw Value (0-1023): " + String(voMeasured));
   Serial.print(" - Voltage: " + String(calcVoltage));
-  Serial.println(" - Dust Density: " + String(dustDensiuy) + " ug/m3");// 측정
+  Serial.println(" - Dust Density: " + String(dustDensity) + " ug/m3");// 측정
   digitalWrite(DUST_LED_PIN, LOW);
   delayMicroseconds(SAMPLING_TIME);
 
