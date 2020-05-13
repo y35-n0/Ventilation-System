@@ -1,5 +1,5 @@
 // L9110 모터 테스트
-/*
+
 #include <SoftwareSerial.h>
 #include "ventilation_system.h"
 

@@ -1,5 +1,5 @@
 // 실외 아두이노 센서
-
+/*
 #include <SoftwareSerial.h>
 #include <DHT.h>
 #include <MQ135.h>
@@ -41,7 +41,7 @@ void setup()
   Serial.println("** SET CO2 SENSOR **");
   pinMode(CO2_PIN, INPUT);
 
-  Serial.println("- Set motor");
+  Serial.println("** SET MOTOR **");
   pinMode(MTA_PIN, OUTPUT);
   pinMode(MTB_PIN, OUTPUT);
 
@@ -54,7 +54,7 @@ void loop()
   Serial.println("** Observing Values **");
   // 모터 작
   digitalWrite(MTA_PIN, HIGH);
-  digitalWrite(MTB_PIN, HIGH);
+  digitalWrite(MTB_PIN, LOW);
   delay(500);
 
   // 온습도 측정
@@ -85,8 +85,9 @@ void loop()
     Serial.print("- Humidity: " + String(total[HUM] / READING_TIMES) + "%");
     Serial.print(" - Temperature: " + String(total[TEM] / READING_TIMES) + "C");
     Serial.print(" - Dust Density: " + String(total[DUS] / READING_TIMES) + " ug/m3");
-    Serial.println("- CO2: " + String(total[CO2] / READING_TIMES) + " ppm");
+    Serial.println(" - CO2: " + String(total[CO2] / READING_TIMES) + " ppm");
 
+    times = 0;
     // 변수 초기화
     for (int i = 0; i < DATA_CNT; i++) {
       total[i] = 0.0;
@@ -141,7 +142,7 @@ void testOneTime()
   // 모터
   Serial.println("- Motor on");
   digitalWrite(MTA_PIN, HIGH);
-  digitalWrite(MTB_PIN, HIGH);
+  digitalWrite(MTB_PIN, LOW);
   delay(500);
   Serial.println("- Motor off");
   digitalWrite(MTA_PIN, LOW);

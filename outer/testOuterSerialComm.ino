@@ -1,0 +1,262 @@
+// 실외 아두이노 종합
+/*
+#include <SoftwareSerial.h>
+#include <ArduinoJson.h>
+#include <DHT.h>
+#include <MQ135.h>
+#include "ventilation_system.h"
+
+
+// JSON 객체
+StaticJsonBuffer<1024> bufJson;    // 받을 데이터
+JsonObject& dataJson = bufJson.createObject();
+
+String bufStr;
+
+
+// 아두이노 데이터
+const char* dataNames[DATA_CNT * 2] = {"i_temp", "i_humid", "i_dust", "i_gas1", "i_gas2",
+                                       "o_temp", "o_humid", "o_dust", "o_gas1", "o_gas2"
+                                      };
+
+// 센서 관련 객체
+DHT dht(DHT_PIN, DHT_TYPE);         // 온습도 측정 센서
+MQ135 mq(CO2_PIN);                  // CO2 측정 센서
+
+// 센서 측정
+float humidity = 0.0;       // 습도 %
+float temperature = 0.0;    // 온도 C
+float voMeasured = 0.0;     // 먼지 실측값
+float calcVoltage = 0.0;    // 먼지 전압 보정값
+float dustDensity = 0.0;    // 먼지 농도 ug/m3
+int gas = 0;                // 가스
+
+
+float total[DATA_CNT] = {0.0, };      // 평균값 산출을 위한 합계 변수
+float data[DATA_CNT * 2] = {0.0, };   // 실내외 데이터
+
+// 센서 값을 읽은 횟수
+int times = 0;
+
+// 기타 운영 관련 변수
+boolean isAuto = true;  // 자동 모드 여부
+int id = -1;            // client id
+int cmd = -1;           // 아두이노 명령
+
+// 멀티스레드처럼 이용하기 위함
+unsigned long now = 0;
+unsigned long timeObserved = 0;
+unsigned long timeVentilated = 0;
+unsigned long timeToVentilate = 0;
+
+
+void setup()
+{
+  Serial.begin(9600);
+  Serial.setTimeout(1000);
+  // 온습도
+  dht.begin();
+
+  // 먼지
+  pinMode(DUST_PIN, INPUT);
+  pinMode(DUST_LED_PIN, OUTPUT);
+
+  // CO2
+  pinMode(CO2_PIN, INPUT);
+
+
+  // 모터
+  pinMode(MTA_PIN, OUTPUT);
+  pinMode(MTB_PIN, OUTPUT);
+  // 모터
+  pinMode(MTA_PIN, OUTPUT);
+  pinMode(MTB_PIN, OUTPUT);
+
+}
+
+// 실외 센서 데이터 관측
+void observeValues()
+{
+//  Serial.println("** Observing Values **");
+
+  // 온습도 측정
+  humidity = dht.readHumidity();
+  temperature = dht.readTemperature();
+  total[HUM] += humidity;
+  total[TEM] += temperature;
+
+  // 먼지 측정
+  digitalWrite(DUST_LED_PIN, LOW);
+  delayMicroseconds(SAMPLING_TIME);
+  voMeasured = analogRead(DUST_PIN);
+  delayMicroseconds(DELTA_TIME);
+  digitalWrite(DUST_LED_PIN, HIGH);
+  delayMicroseconds(SLEEP_TIME);
+
+  // 먼지 수치 보정 계산
+  calcVoltage = voMeasured * (5.0 / 1024.0);
+  total[DUS] += (0.17 * calcVoltage * 0.047) * 1000;
+
+  // CO2 측정
+  total[CO2] += mq.getCorrectedPPM(temperature, humidity);
+
+  times++;
+  if (times == READING_TIMES)
+  {
+    // 평균 결과 출력
+    Serial.println("** Avg Observed Values **");
+
+    Serial.print("- Humidity: "); Serial.print(total[HUM] / READING_TIMES);
+    Serial.print(" % - Temperature: "); Serial.print(total[TEM] / READING_TIMES);
+    Serial.print(" C - Dust Density: "); Serial.print(total[DUS] / READING_TIMES);
+    Serial.print(" ug/m3 - CO2: "); Serial.print(total[CO2] / READING_TIMES); Serial.println(" ppm");
+
+
+
+
+    // 보낼 관측치 -> JSON
+    // 변수 초기화
+    for (int i = 0; i < DATA_CNT; i++) {
+      dataJson.set(dataNames[DATA_CNT + i], total[i] / READING_TIMES);
+      total[i] = 0.0;
+    }
+    times = 0;
+    Serial.println();
+
+    //dataJson.printTo(Serial);
+    //Serial.print(bufStr);
+
+    if (isAuto && dataJson.containsKey(dataNames[0]))
+    {
+      for (int i = 0; i < DATA_CNT * 2; i++) {
+        data[i] = dataJson[dataNames[i]];
+      }
+      // 실내 미세먼지 >= 36 and 실내 미세먼지 > 실외 미세먼지
+      // 실외 미세먼지 > 75 : 약식 환기 / 실외 미세먼지 <= 75 : 환기
+      if (data[DUS] >= 36 && data[DUS] > data[DATA_CNT + DUS]) {
+        turnOnMotor(data[DATA_CNT + DUS] > 75 ? WEAK_TIME : STRONG_TIME);
+        return;
+      }
+      // 실내 CO2 >= 1000
+      // 실외 미세먼지 > 75 : 약식 환기 / 실외 미세먼지 <= 75 : 환기
+      if (data[CO2] >= 1000) {
+        turnOnMotor(data[DATA_CNT + DUS] > 75 ? WEAK_TIME : STRONG_TIME);
+        return;
+      }
+
+      // 실내 유해가스 >= 1000
+      // 실외 미세먼지 > 75 : 약식 환기 / 실외 미세먼지 <= 75 : 환기
+      if (data[GAS] >= 200) {
+        turnOnMotor(data[DATA_CNT + DUS] > 75 ? WEAK_TIME : STRONG_TIME);
+        return;
+      }
+
+    }
+  }
+}
+
+void turnOnMotor(int t) {
+  timeVentilated = millis();
+  timeToVentilate = t;
+  digitalWrite(MTA_PIN, HIGH);
+  digitalWrite(MTB_PIN, LOW);
+
+}
+
+void loop()
+{
+  // 센서 값 측정을 위한 시간 확인
+  now = millis();
+  if ((now - timeObserved) >= DELAY_TIME)
+  {
+    timeObserved = millis();
+    observeValues();
+  }
+
+  // 환기를 하는 중이고 환기가 끝났을 때
+  if (timeToVentilate > 0 && ((now - timeVentilated) >= timeToVentilate) )
+  {
+    timeToVentilate = 0;
+
+    // 모터 끄기
+    digitalWrite(MTA_PIN, LOW);
+    digitalWrite(MTB_PIN, LOW);
+  }
+
+
+  // client와 연결
+
+  if (Serial.available())
+  {
+    bufStr = Serial.readStringUntil("\n");
+    Serial.println("- Received Str: " + bufStr);
+    JsonObject& tmpJson = bufJson.parseObject(bufStr);
+
+    // request에 따라 응답을 달리함
+    if(tmpJson.containsKey("id")){
+      Serial.print("id: "); Serial.println(id);  
+    }
+    
+    switch (id) {
+      // 실내 아두이노 데이터 수집
+      case INNER_ARDUINO:
+        Serial.println("- INNER ARDUINO, Parsing received data ...");
+        for (int i = 0; i < DATA_CNT; i++)
+        {
+          dataJson.set(dataNames[i], tmpJson[dataNames[i]]);
+        }
+        break;
+
+      // 안드로이드
+      case ANDROID:
+        Serial.print("- ANDROID, ");
+        cmd = tmpJson["cmd"];
+        //cmd
+        switch (cmd)
+        {
+          // 데이터 전송
+          case REQUEST:
+            Serial.println("Request data");
+            dataJson.printTo(Serial);
+            //Serial.print(bufStr);
+            break;
+          // 자동 조작
+          case AUTO:
+            Serial.println("Auto mode");
+            isAuto = true;
+            break;
+          //수동 약한 환기
+          case MANUAL_WEAK:
+            Serial.println("Manual mode, weak ventilation");
+            isAuto = false;
+            // 모터 작동
+            turnOnMotor(WEAK_TIME);
+            break;
+          //수동 환기
+          case MANUAL_STRONG:
+            Serial.println("Manual mode, strong ventilation");
+            isAuto = false;
+            turnOnMotor(STRONG_TIME);
+            break;
+          //수동 환기 중지
+          case MANUAL_STOP:
+            Serial.println("Manual mode, stop ventilation");
+            isAuto = false;
+            timeToVentilate = 0;
+            break;
+          default:
+            Serial.println("Unknown usage");
+        }
+        break;
+
+      default:
+        Serial.println("- Unknown User");
+        break;
+    }
+  }
+}
+
+
+
+/*
+*/

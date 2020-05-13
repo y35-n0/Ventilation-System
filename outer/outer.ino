@@ -58,10 +58,6 @@ void setup()
   Serial.begin(9600);
 
   // 와이파이 연결
-  Serial.println();
-  Serial.println("** CONNECT WIFI **");
-
-  Serial.print("- Connecting AP ");
   WiFi.begin(AP_SSID, AP_PASS);
   while (WiFi.status() != WL_CONNECTED)
   {
@@ -69,29 +65,24 @@ void setup()
     Serial.print(".");
   }
 
-  Serial.println(" Ready");
-  Serial.print("- IP address: ");
-  Serial.println(WiFi.localIP());
-
   // 서버 설정
-  Serial.println("- Setting Server");
   server.begin();
 
   // 온습도
-  Serial.println("** SET DHT SENSOR **");
   dht.begin();
 
   // 먼지
-  Serial.println("** SET DUST SENSOR **");
   pinMode(DUST_PIN, INPUT);
   pinMode(DUST_LED_PIN, OUTPUT);
 
-  // 가스
-  Serial.println("** SET GAS SENSOR **");
-  pinMode(GAS_PIN, INPUT);
+  // CO2
+  pinMode(CO2_PIN, INPUT);
+
 
   // 모터
-  Serial.println("- Set motor");
+  pinMode(MTA_PIN, OUTPUT);
+  pinMode(MTB_PIN, OUTPUT);
+  // 모터
   pinMode(MTA_PIN, OUTPUT);
   pinMode(MTB_PIN, OUTPUT);
 
@@ -152,37 +143,31 @@ void loop()
             {
               // 데이터 전송
               case REQUEST:
-                Serial.println("Sending data...");
-                Serial.print("- Data : ");
                 serializeJson(dataJson, bufStr);
-                Serial.println(bufStr);
                 client.print(bufStr);
                 break;
               // 자동 조작
               case AUTO:
-                Serial.println("Automatic mode...");
                 isAuto = true;
                 break;
-              case MANUAL:
-                Serial.println("Manual mode...");
+              //수동 약한 환기
+              case MANUAL_WEAK: 
                 isAuto = false;
-                break;
-              // 약한 환기
-              case WEAK_VT:
-                Serial.println("Ventilate weakly...");
-
                 // 모터 작동
                 turnOnMotor(WEAK_TIME);
                 break;
-              case STRONG_VT:
-                Serial.println("Ventilate strongly...");
-
-                // 모터 작동
+              //수동 환기
+              case MANUAL_STRONG: 
+                isAuto = false;
                 turnOnMotor(STRONG_TIME);
+                break;
+              //수동 환기 중지
+              case MANUAL_STOP: 
+                isAuto = false;
+                timeToVentilate = 0;
                 break;
               default:
                 Serial.println("Unknown usage");
-                client.println("Unknown usage");
             }
             break;
 
@@ -206,8 +191,10 @@ void observeValues()
   Serial.println("** Observing Values **");
 
   // 온습도 측정
-  total[HUM] += dht.readHumidity();
-  total[TEM] += dht.readTemperature();
+  humidity = dht.readHumidity();
+  temperature = dht.readTemperature();
+  total[HUM] += humidity;
+  total[TEM] += temperature;
 
   // 먼지 측정
   digitalWrite(DUST_LED_PIN, LOW);
@@ -221,8 +208,8 @@ void observeValues()
   calcVoltage = voMeasured * (5.0 / 1024.0);
   total[DUS] += (0.17 * calcVoltage * 0.047) * 1000;
 
-  // 가스 측정
-  total[GAS] += analogRead(GAS_PIN);
+  // CO2 측정
+  total[CO2] += mq.getCorrectedPPM(temperature, humidity);
 
   times++;
   if (times == READING_TIMES)
@@ -233,12 +220,12 @@ void observeValues()
     Serial.print("- Humidity: " + String(total[HUM] / READING_TIMES) + "%");
     Serial.print(" - Temperature: " + String(total[TEM] / READING_TIMES) + "C");
     Serial.print(" - Dust Density: " + String(total[DUS] / READING_TIMES) + " ug/m3");
-    Serial.println("- GAS: " + String(total[GAS] / READING_TIMES));
+    Serial.println(" - CO2: " + String(total[CO2] / READING_TIMES), + "ppm");
 
     // 보낼 관측치 -> JSON
     // 변수 초기화
     for (int i = 0; i < DATA_CNT; i++) {
-      dataJson[dataNames[DATA_CNT + i]] = total[i];
+      dataJson[dataNames[DATA_CNT + i]] = total[i] / READING_TIMES;
       total[i] = 0.0;
     }
     times = 0;
@@ -260,7 +247,7 @@ void observeValues()
         turnOnMotor(data[DATA_CNT + DUS] > 75 ? WEAK_TIME : STRONG_TIME);
         return;
       }
-      
+
       // 실내 유해가스 >= 1000
       // 실외 미세먼지 > 75 : 약식 환기 / 실외 미세먼지 <= 75 : 환기
       if (data[GAS] >= 200) {

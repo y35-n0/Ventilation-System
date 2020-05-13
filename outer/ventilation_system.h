@@ -1,7 +1,7 @@
 // 와이파이 설정
 
-#define AP_SSID            "iptime"    // WiFi SSID
-//#define AP_PASS            "공유기 비밀번호"   // WiFi 비밀번호
+#define AP_SSID            "U+NetDA20"    // WiFi SSID
+#define AP_PASS            "5000025797"   // WiFi 비밀번호
 //#define HOST               "실외 IP 주소"       // 실외 아두이노 IP 주소
 #define PORT                8090              // 실외 아두이노 포트 번호
 
@@ -14,9 +14,9 @@
 
 #define REQUEST         0       // 데이터 요청
 #define AUTO            1       // 자동 조작
-#define MANUAL          2       // 수동 조작  
-#define WEAK_VT         3       // 약식 환기
-#define STRONG_VT       4       // 환기
+#define MANUAL_WEAK          2       // 수동 약식환기  
+#define MANUAL_STRONG         3       // 수동 환기
+#define MANUAL_STOP       4       // 수동 환기중지
 
 // 환기 시간
 #define WEAK_TIME       3000    // 약식 환기 시간

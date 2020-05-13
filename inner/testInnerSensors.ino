@@ -68,7 +68,7 @@ void loop()
 
   // 먼지 수치 보정 계산
   calcVoltage = voMeasured * (5.0 / 1024.0);
-  totalDust += (0.17 * calcVoltage - 0.1) * 1000;
+  totalDust += (0.17 * calcVoltage *0.047) * 1000;
 
   // CO2 측정 및 수치 보정
   totalCo2 += mq.getCorrectedPPM(temperature, humidity);
@@ -124,7 +124,7 @@ void testOneTime()
 
   // 먼지 수치 보정 계산
   calcVoltage = voMeasured * (5.0 / 1024.0);
-  dustDensity = (0.17 * calcVoltage - 0.1) * 1000;
+  dustDensity = (0.17 * calcVoltage *0.047) * 1000;
 
   // 먼지 결과 출력
   Serial.print("- Raw Value (0-1023): " + String(voMeasured));

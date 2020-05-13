@@ -1,5 +1,5 @@
 // 실내 아두이노
-/*
+
 #include <ESP8266WiFi.h>
 #include <DHT.h>
 #include <MQ135.h>
@@ -27,9 +27,6 @@ float humidity = 0.0;       // 습도 %
 float temperature = 0.0;    // 온도 C
 float voMeasured = 0.0;     // 먼지 실측값
 float calcVoltage = 0.0;    // 먼지 전압 보정값
-float dustDensity = 0.0;    // 먼지 농도 ug/m3
-float co2 = 0.0;            // CO2 ppm
-int gas = 0;                // 가연가스
 
 // 평균값 산출을 위한 합계 변수
 float total[DATA_CNT] = {0.0, };
@@ -82,8 +79,10 @@ void loop()
 {
   Serial.println("** Observing Values **");
   // 온습도 측정
-  total[HUM] += dht.readHumidity();
-  total[TEM] += dht.readTemperature();
+  humidity = dht.readHumidity();
+  temperature = dht.readTemperature();
+  total[HUM] += humidity;
+  total[TEM] += temperature;
 
   // 먼지 측정
   digitalWrite(DUST_LED_PIN, LOW);
@@ -95,7 +94,7 @@ void loop()
 
   // 먼지 수치 보정 계산
   calcVoltage = voMeasured * (5.0 / 1024.0);
-  total[DUS] += (0.17 * calcVoltage - 0.1) * 1000;
+  total[DUS] += (0.17 * calcVoltage - 0.047) * 1000;
 
   // CO2 측정 및 수치 보정
   total[CO2] += mq.getCorrectedPPM(temperature, humidity);
@@ -120,7 +119,7 @@ void loop()
     Serial.println("** Sending Data ...**");
     Serial.println("- Set Data");
     for (int i = 0; i < DATA_CNT; i++) {
-      bufJson[dataNames[i]] = total[i];
+      bufJson[dataNames[i]] = total[i] / READING_TIMES;
       total[i] = 0.0;
     }
     serializeJson(bufJson, bufStr);
@@ -130,15 +129,11 @@ void loop()
     Serial.printf("- Connect Server %s ... ", HOST);
     if (client.connect(HOST, PORT))
     {
-      Serial.println("Ready");
-
       // 데이터 전송
-      Serial.println("- Reqeust: " + bufStr);
       client.print(bufStr);
 
 
       // 응답확인
-      Serial.println("- Response: ");
       while (client.connected() || client.available())
       {
         if (client.available())

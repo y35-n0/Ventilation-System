@@ -12,8 +12,8 @@ void setup()
   Serial.println("** CONNECT WIFI TEST **");
   
   Serial.print("- Connecting ");
-  //WiFi.begin(AP_SSID, AP_PASS);
-  WiFi.begin(AP_SSID);
+  WiFi.begin(AP_SSID, AP_PASS);
+  //WiFi.begin(AP_SSID);
   while (WiFi.status() != WL_CONNECTED)
   {
     delay(500);
